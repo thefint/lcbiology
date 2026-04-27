@@ -1,1 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LC Biology — Study Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ── CONFIG: paste your Supabase keys below ── */
+  /* Edit SUPABASE_URL and SUPABASE_ANON_KEY in the <script> at the bottom */
 
+  :root {
+    --green:       #1a7a5e;
+    --green-light: #e8f5f0;
+    --green-mid:   #2ea87e;
+    --green-dark:  #0d4f3c;
+    --amber:       #c97c2a;
+    --amber-light: #fdf3e3;
+    --blue:        #2563a8;
+    --blue-light:  #e8f0fb;
+    --red:         #c0392b;
+    --red-light:   #fdecea;
+    --bg:          #f7f6f2;
+    --surface:     #ffffff;
+    --border:      #e2e0d8;
+    --text:        #1a1a18;
+    --muted:       #7a7870;
+    --radius:      10px;
+    --radius-lg:   16px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 500; line-height: 1.2; }
+
+  .hidden { display: none !important; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 20px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: var(--text); cursor: pointer; transition: all .15s;
+    font-weight: 400; text-decoration: none;
+  }
+  .btn:hover { background: var(--bg); border-color: #c8c6be; }
+  .btn-primary {
+    background: var(--green); color: #fff;
+    border-color: var(--green); font-weight: 500;
+  }
+  .btn-primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-ghost { border-color: transparent; background: transparent; }
+  .btn-ghost:hover { background: var(--bg); }
+
+  /* ── TAGS ── */
+  .tag {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 20px; font-size: 12px; font-weight: 500;
+  }
+  .tag-green  { background: var(--green-light);  color: var(--green-dark); }
+  .tag-blue   { background: var(--blue-light);   color: var(--blue); }
+  .tag-amber  { background: var(--amber-light);  color: var(--amber); }
+  .tag-gray   { background: #f0eeea; color: var(--muted); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+  }
+
+  /* ── FORMS ── */
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+  input, textarea, select {
+    width: 100%; padding: 9px 13px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    background: var(--surface); color: var(--text);
+    transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(26,122,94,.1);
+  }
+  textarea { resize: vertical; }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh; display: flex;
+    align-items: center; justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #e8f5f0 0%, #f7f6f2 50%, #fdf3e3 100%);
+  }
+  .login-box { width: 100%; max-width: 400px; }
+  .login-logo {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: var(--green); display: flex; align-items: center;
+    justify-content: center; font-size: 28px; margin: 0 auto 1.5rem;
+  }
+  .login-title { text-align: center; margin-bottom: 0.25rem; font-size: 28px; }
+  .login-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 2rem; }
+  .login-box .card { padding: 2rem; }
+  .form-group { margin-bottom: 1rem; }
+  .error-msg { color: var(--red); font-size: 13px; margin-top: 6px; display: none; }
+  .admin-link { text-align: center; font-size: 13px; color: var(--muted); margin-top: 1rem; }
+  .admin-link span { color: var(--green); cursor: pointer; font-weight: 500; }
+  .admin-link span:hover { text-decoration: underline; }
+
+  /* ── SETUP BANNER ── */
+  #setup-banner {
+    background: var(--amber-light); border: 1px solid #f0c97a;
+    border-radius: var(--radius); padding: 12px 16px; margin-bottom: 1.5rem;
+    font-size: 13px; color: var(--amber); line-height: 1.5;
+  }
+  #setup-banner strong { color: #8a5200; }
+  #setup-banner code {
+    background: rgba(0,0,0,.06); padding: 1px 6px;
+    border-radius: 4px; font-family: monospace; font-size: 12px;
+  }
+
+  /* ── APP SHELL ── */
+  #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem; display: flex; align-items: center;
+    justify-content: space-between; height: 56px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .topbar-icon {
+    width: 34px; height: 34px; background: var(--green);
+    border-radius: 9px; display: flex; align-items: center;
+    justify-content: center; font-size: 16px;
+  }
+  .topbar-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 500; }
+  .topbar-role { font-size: 11px; color: var(--muted); }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    display: flex; gap: 2px; padding: 0 1.5rem;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .nav-tab {
+    padding: 12px 16px; font-size: 14px; color: var(--muted);
+    border: none; background: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color .15s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--green); border-bottom-color: var(--green); font-weight: 500; }
+
+  /* ── MAIN CONTENT ── */
+  .main { flex: 1; padding: 1.75rem 1.5rem; max-width: 860px; margin: 0 auto; width: 100%; }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .filters select { flex: 1; min-width: 140px; }
+
+  /* ── QUESTION CARD ── */
+  .q-card { margin-bottom: 1rem; }
+  .q-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .q-text { font-size: 14px; line-height: 1.65; margin-bottom: 10px; white-space: pre-wrap; }
+  .q-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ms-box {
+    background: var(--green-light); border-left: 3px solid var(--green);
+    padding: 10px 14px; border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 13px; margin-top: 10px; white-space: pre-wrap;
+    color: var(--green-dark); line-height: 1.6;
+  }
+  .ms-label { font-size: 11px; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 4px; }
+
+  /* ── AI BUBBLE ── */
+  .ai-bubble {
+    background: var(--green-light); border: 1px solid #a8dcc8;
+    border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    font-size: 14px; color: var(--green-dark); margin-top: 10px;
+    line-height: 1.7;
+  }
+  .ai-label { font-size: 11px; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 6px; }
+  .ai-error {
+    background: var(--red-light); border-color: #f5b8b2;
+    color: var(--red);
+  }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid #a8dcc8; border-top-color: var(--green);
+    border-radius: 50%; animation: spin .7s linear infinite;
+    display: inline-block; vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── QUIZ ── */
+  .quiz-intro { margin-bottom: 1.25rem; }
+  .quiz-q { font-size: 15px; line-height: 1.65; margin-bottom: 1rem; }
+
+  /* ── NOTES ── */
+  .topic-section { margin-bottom: 2rem; }
+  .topic-heading {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .note-card { margin-bottom: 8px; }
+  .note-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .note-title { font-weight: 500; font-size: 14px; }
+  .note-content { font-size: 13px; color: var(--muted); margin-top: 8px; white-space: pre-wrap; }
+
+  /* ── ADMIN STATS ── */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 500; color: var(--green); font-family: 'Playfair Display', serif; }
+  .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── ADMIN TABS ── */
+  .admin-nav { display: flex; gap: 6px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .admin-tab {
+    padding: 7px 16px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface);
+    font-size: 13px; color: var(--muted); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all .15s;
+  }
+  .admin-tab:hover { color: var(--text); }
+  .admin-tab.active { background: var(--green); color: #fff; border-color: var(--green); font-weight: 500; }
+
+  /* ── FORM GRID ── */
+  .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── SUCCESS ── */
+  .success-msg { color: var(--green); font-size: 13px; margin-top: 8px; display: none; font-weight: 500; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 1rem; opacity: .4; }
+  .empty p { font-size: 14px; }
+
+  /* ── SETUP SCREEN ── */
+  #setup-screen {
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 2rem;
+    background: linear-gradient(135deg, #e8f5f0 0%, #f7f6f2 60%, #fdf3e3 100%);
+  }
+  .setup-box { width: 100%; max-width: 560px; }
+  .setup-box h1 { font-size: 26px; margin-bottom: .5rem; }
+  .setup-box p { color: var(--muted); font-size: 14px; margin-bottom: 1.5rem; line-height: 1.6; }
+  .setup-step {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .setup-step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--green); color: #fff; font-size: 13px;
+    font-weight: 500; display: inline-flex; align-items: center;
+    justify-content: center; margin-right: 8px;
+  }
+  .setup-step h3 { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+  .setup-step p { margin-bottom: 8px; color: var(--muted); font-size: 13px; }
+  .setup-step code {
+    display: block; background: #1a1a18; color: #a8dcc8;
+    padding: 10px 14px; border-radius: var(--radius);
+    font-family: monospace; font-size: 13px; white-space: pre-wrap;
+    margin-bottom: 10px; overflow-x: auto;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid2 { grid-template-columns: 1fr; }
+    .main { padding: 1rem; }
+    .topbar { padding: 0 1rem; }
+    .nav-tabs { padding: 0 1rem; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     SETUP SCREEN — shown before Supabase is configured
+     ══════════════════════════════════════════════════ -->
+<div id="setup-screen" class="hidden">
+  <div class="setup-box">
+    <div class="login-logo" style="margin-bottom:1.5rem">🧬</div>
+    <h1>One-time setup</h1>
+    <p>You need to connect this app to a free Supabase database. Follow the steps below — it takes about 5 minutes and you only do it once.</p>
+
+    <div class="setup-step">
+      <h3><span class="setup-step-num">1</span> Create a free Supabase account</h3>
+      <p>Go to <a href="https://supabase.com" target="_blank" style="color:var(--green)">supabase.com</a>, sign up free, and create a new project. Call it anything (e.g. "lcbiology").</p>
+    </div>
+
+    <div class="setup-step">
+      <h3><span class="setup-step-num">2</span> Create the database tables</h3>
+      <p>In your Supabase project, go to <strong>SQL Editor</strong> and run this query:</p>
+      <code>create table questions (
+  id bigint generated always as identity primary key,
+  topic text, year text, marks text,
+  question text, marking_scheme text,
+  file_name text, created_at timestamptz default now()
+);
+
+create table resources (
+  id bigint generated always as identity primary key,
+  title text, topic text, type text,
+  url text, content text,
+  created_at timestamptz default now()
+);
+
+alter table questions enable row level security;
+alter table resources enable row level security;
+create policy "public read" on questions for select using (true);
+create policy "public read" on resources for select using (true);
+create policy "public write" on questions for all using (true);
+create policy "public write" on resources for all using (true);</code>
+    </div>
+
+    <div class="setup-step">
+      <h3><span class="setup-step-num">3</span> Paste your Supabase keys below</h3>
+      <p>In Supabase go to <strong>Project Settings → API</strong>. Copy your Project URL and anon/public key.</p>
+      <div class="form-group"><label>Supabase Project URL</label>
+        <input type="text" id="setup-url" placeholder="https://xxxxxxxxxxxx.supabase.co" />
+      </div>
+      <div class="form-group" style="margin-top:8px"><label>Supabase anon key</label>
+        <input type="text" id="setup-key" placeholder="eyJhbGci..." />
+      </div>
+      <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="saveSupabaseConfig()">Save & connect</button>
+      <p id="setup-error" class="error-msg">Please enter both values.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     LOGIN SCREEN
+     ══════════════════════════════════════════════════ -->
+<div id="login-screen" class="hidden">
+  <div class="login-box">
+    <div class="login-logo">🧬</div>
+    <h1 class="login-title">LC Biology</h1>
+    <p class="login-sub">Leaving Cert Study Platform</p>
+    <div class="card">
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="pw-input" placeholder="Enter class password" />
+        <p class="error-msg" id="pw-error">Incorrect password. Try again.</p>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="tryLogin()">Sign in</button>
+    </div>
+    <div class="admin-link">Admin? <span onclick="showScreen('admin-login-screen')">Sign in as admin</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ADMIN LOGIN
+     ══════════════════════════════════════════════════ -->
+<div id="admin-login-screen" class="hidden">
+  <div class="login-box">
+    <div class="login-logo" style="background:var(--amber)">🔑</div>
+    <h1 class="login-title">Admin login</h1>
+    <p class="login-sub">LC Biology Platform</p>
+    <div class="card">
+      <div class="form-group">
+        <label>Admin password</label>
+        <input type="password" id="admin-pw-input" placeholder="Enter admin password" />
+        <p class="error-msg" id="admin-error">Incorrect admin password.</p>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="tryAdminLogin()">Sign in as admin</button>
+      <button class="btn" style="width:100%" onclick="showScreen('login-screen')">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STUDENT APP
+     ══════════════════════════════════════════════════ -->
+<div id="student-screen" class="hidden">
+  <div id="app">
+    <div class="topbar">
+      <div class="topbar-brand">
+        <div class="topbar-icon">🧬</div>
+        <div>
+          <div class="topbar-name">LC Biology</div>
+          <div class="topbar-role">Study Platform</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-sm btn-ghost" onclick="logout()">Sign out</button>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('s-questions',this)">Questions</button>
+      <button class="nav-tab" onclick="switchTab('s-quiz',this)">AI Quiz</button>
+      <button class="nav-tab" onclick="switchTab('s-notes',this)">Notes & Videos</button>
+    </div>
+    <div class="main">
+
+      <!-- QUESTIONS TAB -->
+      <div id="s-questions">
+        <div class="filters">
+          <select id="filter-topic" onchange="renderQuestions()">
+            <option value="">All topics</option>
+            <option>Cell Biology</option><option>Genetics</option><option>Ecology</option>
+            <option>Human Biology</option><option>Plant Biology</option>
+            <option>Microbiology</option><option>Evolution</option>
+            <option>Reproduction</option><option>Breathing System</option>
+            <option>Nervous System</option><option>Circulatory System</option>
+            <option>Excretion</option><option>Enzymes</option>
+            <option>DNA & RNA</option><option>Experiments</option>
+          </select>
+          <select id="filter-year" onchange="renderQuestions()">
+            <option value="">All years / papers</option>
+            <option>2025</option><option>2024</option><option>2023</option>
+            <option>2022</option><option>2021</option><option>2020</option>
+            <option>2019</option><option>2018</option><option>2017</option>
+            <option>2016</option><option>2015</option><option>2014</option>
+            <option>2013</option><option>2012</option><option>2011</option>
+            <option>2010</option><option>2009</option><option>2008</option>
+            <option>2007</option><option>2006</option><option>2005</option>
+            <option>Pre-exam</option>
+          </select>
+        </div>
+        <div id="q-list"><div class="empty"><div class="empty-icon">📚</div><p>Loading questions...</p></div></div>
+      </div>
+
+      <!-- QUIZ TAB -->
+      <div id="s-quiz" class="hidden">
+        <div class="card quiz-intro">
+          <h2 style="font-size:20px;margin-bottom:.5rem">AI Quiz</h2>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:1rem">The AI will generate an exam-style question on your chosen topic and give you detailed feedback on your answer.</p>
+          <div class="filters" style="margin-bottom:1rem">
+            <select id="quiz-topic">
+              <option>Cell Biology</option><option>Genetics</option><option>Ecology</option>
+              <option>Human Biology</option><option>Plant Biology</option>
+              <option>Microbiology</option><option>Evolution</option>
+              <option>Reproduction</option><option>Breathing System</option>
+              <option>Nervous System</option><option>Circulatory System</option>
+              <option>Excretion</option><option>Enzymes</option>
+              <option>DNA &amp; RNA</option>
+            </select>
+            <select id="quiz-level">
+              <option value="ordinary">Ordinary Level</option>
+              <option value="higher" selected>Higher Level</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="startQuiz()">Generate question ↗</button>
+        </div>
+        <div id="quiz-area"></div>
+      </div>
+
+      <!-- NOTES TAB -->
+      <div id="s-notes" class="hidden">
+        <div id="notes-list"><div class="empty"><div class="empty-icon">📝</div><p>Loading resources...</p></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ADMIN APP
+     ══════════════════════════════════════════════════ -->
+<div id="admin-screen" class="hidden">
+  <div id="app">
+    <div class="topbar">
+      <div class="topbar-brand">
+        <div class="topbar-icon" style="background:var(--amber)">🔑</div>
+        <div>
+          <div class="topbar-name">Admin panel</div>
+          <div class="topbar-role">LC Biology Platform</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-sm btn-ghost" onclick="logout()">Sign out</button>
+      </div>
+    </div>
+    <div class="main">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num" id="stat-q">—</div><div class="stat-lbl">Questions</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-n">—</div><div class="stat-lbl">Resources</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-topics">—</div><div class="stat-lbl">Topics covered</div></div>
+      </div>
+
+      <div class="admin-nav">
+        <button class="admin-tab active" onclick="switchAdminTab('a-add-q',this)">Add question</button>
+        <button class="admin-tab" onclick="switchAdminTab('a-add-note',this)">Add note / video</button>
+        <button class="admin-tab" onclick="switchAdminTab('a-manage',this)">Manage content</button>
+        <button class="admin-tab" onclick="switchAdminTab('a-settings',this)">Settings</button>
+      </div>
+
+      <!-- ADD QUESTION -->
+      <div id="a-add-q">
+        <div class="card">
+          <h2 style="font-size:18px;margin-bottom:1rem">Add a question</h2>
+          <div class="form-grid2" style="margin-bottom:12px">
+            <div><label>Topic</label>
+              <select id="new-topic">
+                <option>Cell Biology</option><option>Genetics</option><option>Ecology</option>
+                <option>Human Biology</option><option>Plant Biology</option>
+                <option>Microbiology</option><option>Evolution</option>
+                <option>Reproduction</option><option>Breathing System</option>
+                <option>Nervous System</option><option>Circulatory System</option>
+                <option>Excretion</option><option>Enzymes</option>
+                <option>DNA &amp; RNA</option><option>Experiments</option>
+              </select>
+            </div>
+            <div><label>Year / paper</label>
+              <input type="text" id="new-year" placeholder="e.g. 2023, Pre-exam A" />
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label>Marks</label>
+            <input type="text" id="new-marks" placeholder="e.g. 8 marks" style="width:140px" />
+          </div>
+          <div style="margin-bottom:12px">
+            <label>Question text</label>
+            <textarea id="new-q" rows="4" placeholder="Type or paste the question here..."></textarea>
+          </div>
+          <div style="margin-bottom:12px">
+            <label>Marking scheme</label>
+            <textarea id="new-ms" rows="5" placeholder="Paste marking scheme points here (one per line works well)..."></textarea>
+          </div>
+          <div style="margin-bottom:1.25rem">
+            <label>File / source reference (optional)</label>
+            <input type="text" id="new-file" placeholder="e.g. 2023 Paper 1 Q4, or PDF filename" />
+          </div>
+          <button class="btn btn-primary" onclick="addQuestion()">Add question</button>
+          <p class="success-msg" id="add-q-success">✓ Question added successfully.</p>
+        </div>
+      </div>
+
+      <!-- ADD NOTE / VIDEO -->
+      <div id="a-add-note" class="hidden">
+        <div class="card">
+          <h2 style="font-size:18px;margin-bottom:1rem">Add notes or video</h2>
+          <div style="margin-bottom:12px">
+            <label>Title</label>
+            <input type="text" id="note-title" placeholder="e.g. Photosynthesis summary" />
+          </div>
+          <div class="form-grid2" style="margin-bottom:12px">
+            <div><label>Topic</label>
+              <select id="note-topic">
+                <option>Cell Biology</option><option>Genetics</option><option>Ecology</option>
+                <option>Human Biology</option><option>Plant Biology</option>
+                <option>Microbiology</option><option>Evolution</option>
+                <option>Reproduction</option><option>Breathing System</option>
+                <option>Nervous System</option><option>Circulatory System</option>
+                <option>Excretion</option><option>Enzymes</option>
+                <option>DNA &amp; RNA</option><option>Experiments</option>
+              </select>
+            </div>
+            <div><label>Type</label>
+              <select id="note-type" onchange="toggleNoteFields()">
+                <option value="notes">Notes</option>
+                <option value="video">YouTube video</option>
+              </select>
+            </div>
+          </div>
+          <div id="note-url-wrap" style="margin-bottom:12px;display:none">
+            <label>YouTube URL</label>
+            <input type="text" id="note-url" placeholder="https://youtube.com/watch?v=..." />
+          </div>
+          <div id="note-content-wrap" style="margin-bottom:12px">
+            <label>Notes content</label>
+            <textarea id="note-content" rows="6" placeholder="Paste or type your notes here..."></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="addNote()">Add resource</button>
+          <p class="success-msg" id="add-note-success">✓ Resource added.</p>
+        </div>
+      </div>
+
+      <!-- MANAGE CONTENT -->
+      <div id="a-manage" class="hidden">
+        <div class="card" style="margin-bottom:1rem">
+          <h2 style="font-size:18px;margin-bottom:1rem">Manage questions</h2>
+          <div id="manage-q-list"><p style="color:var(--muted);font-size:14px">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="a-settings" class="hidden">
+        <div class="card" style="margin-bottom:1rem">
+          <h2 style="font-size:18px;margin-bottom:1rem">Passwords</h2>
+          <div class="form-group" style="margin-bottom:12px">
+            <label>Student password</label>
+            <input type="text" id="set-student-pw" />
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Admin password</label>
+            <input type="text" id="set-admin-pw" />
+          </div>
+          <button class="btn btn-primary" onclick="savePasswords()">Save passwords</button>
+          <p class="success-msg" id="pw-saved">✓ Passwords saved.</p>
+        </div>
+        <div class="card">
+          <h2 style="font-size:18px;margin-bottom:.5rem">Supabase connection</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Update your Supabase URL and key if needed.</p>
+          <div class="form-group" style="margin-bottom:12px">
+            <label>Supabase URL</label>
+            <input type="text" id="settings-url" />
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>Supabase anon key</label>
+            <input type="text" id="settings-key" />
+          </div>
+          <button class="btn btn-primary" onclick="updateSupabaseConfig()">Update connection</button>
+          <p class="success-msg" id="sb-saved">✓ Saved. Reload the page to reconnect.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIG — stored in localStorage
+// ══════════════════════════════════════════════════
+const DEFAULTS = { student_pw: 'biology2025', admin_pw: 'admin123' };
+let sbClient = null;
+
+function cfg(k){ return localStorage.getItem('lcb_'+k) || DEFAULTS[k] || ''; }
+function setCfg(k,v){ localStorage.setItem('lcb_'+k, v); }
+
+function initSupabase(){
+  const url = cfg('sb_url'), key = cfg('sb_key');
+  if(!url || !key) return false;
+  sbClient = window.supabase.createClient(url, key);
+  return true;
+}
+
+// ══════════════════════════════════════════════════
+// SCREEN ROUTING
+// ══════════════════════════════════════════════════
+const SCREENS = ['setup-screen','login-screen','admin-login-screen','student-screen','admin-screen'];
+function showScreen(id){
+  SCREENS.forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+  // special: login screens need the login flex layout
+  ['login-screen','admin-login-screen','setup-screen'].forEach(s => {
+    const el = document.getElementById(s);
+    if(!el.classList.contains('hidden')) el.style.display = 'flex';
+    else el.style.display = '';
+  });
+}
+
+function logout(){
+  showScreen('login-screen');
+  document.getElementById('pw-input').value = '';
+  document.getElementById('admin-pw-input').value = '';
+}
+
+// ══════════════════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════════════════
+function saveSupabaseConfig(){
+  const url = document.getElementById('setup-url').value.trim();
+  const key = document.getElementById('setup-key').value.trim();
+  if(!url || !key){ document.getElementById('setup-error').style.display='block'; return; }
+  setCfg('sb_url', url); setCfg('sb_key', key);
+  location.reload();
+}
+
+// ══════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════
+function tryLogin(){
+  if(document.getElementById('pw-input').value === cfg('student_pw')){
+    showScreen('student-screen');
+    loadStudentData();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+  }
+}
+function tryAdminLogin(){
+  if(document.getElementById('admin-pw-input').value === cfg('admin_pw')){
+    showScreen('admin-screen');
+    loadAdminData();
+    document.getElementById('set-student-pw').value = cfg('student_pw');
+    document.getElementById('set-admin-pw').value = cfg('admin_pw');
+    document.getElementById('settings-url').value = cfg('sb_url');
+    document.getElementById('settings-key').value = cfg('sb_key');
+  } else {
+    document.getElementById('admin-error').style.display = 'block';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  const as = document.activeElement;
+  if(as && as.id === 'pw-input') tryLogin();
+  if(as && as.id === 'admin-pw-input') tryAdminLogin();
+});
+
+// ══════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════
+function switchTab(id, btn){
+  ['s-questions','s-quiz','s-notes'].forEach(t => document.getElementById(t).classList.add('hidden'));
+  document.querySelectorAll('#student-screen .nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.remove('hidden');
+  btn.classList.add('active');
+}
+function switchAdminTab(id, btn){
+  ['a-add-q','a-add-note','a-manage','a-settings'].forEach(t => document.getElementById(t).classList.add('hidden'));
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.remove('hidden');
+  btn.classList.add('active');
+  if(id === 'a-manage') loadManage();
+}
+
+// ══════════════════════════════════════════════════
+// STUDENT DATA
+// ══════════════════════════════════════════════════
+let allQuestions = [], allNotes = [];
+
+async function loadStudentData(){
+  if(!sbClient){ showOfflineMsg(); return; }
+  const [qRes, nRes] = await Promise.all([
+    sbClient.from('questions').select('*').order('created_at', {ascending:false}),
+    sbClient.from('resources').select('*').order('created_at', {ascending:false})
+  ]);
+  allQuestions = qRes.data || [];
+  allNotes = nRes.data || [];
+  renderQuestions();
+  renderNotes();
+}
+
+function showOfflineMsg(){
+  document.getElementById('q-list').innerHTML = `<div class="ai-bubble ai-error">⚠️ Not connected to database. Please ask your teacher to complete the Supabase setup.</div>`;
+}
+
+function renderQuestions(){
+  const topic = document.getElementById('filter-topic').value;
+  const year  = document.getElementById('filter-year').value;
+  let qs = allQuestions;
+  if(topic) qs = qs.filter(q => q.topic === topic);
+  if(year)  qs = qs.filter(q => q.year && q.year.toLowerCase().includes(year.toLowerCase()));
+  const el = document.getElementById('q-list');
+  if(!qs.length){
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>No questions found for these filters.</p></div>`;
+    return;
+  }
+  el.innerHTML = qs.map(q => {
+    let imgs = [];
+    try { imgs = JSON.parse(q.page_images || '[]'); } catch(e) {}
+    return `
+    <div class="card q-card">
+      <div class="q-meta">
+        <span class="tag tag-green">${q.topic||''}</span>
+        ${q.year?`<span class="tag tag-gray">${q.year}</span>`:''}
+        ${q.marks?`<span class="tag tag-blue">${q.marks}</span>`:''}
+      </div>
+      <div class="q-text">${escHtml(q.question||'')}</div>
+      <div class="q-actions">
+        ${q.marking_scheme?`<button class="btn btn-sm" onclick="toggleMS('ms-${q.id}')">Marking scheme</button>`:''}
+        ${imgs && imgs.length?`<button class="btn btn-sm" onclick="toggleImgs('imgs-${q.id}')">📄 View pages</button>`:''}
+        <button class="btn btn-sm" style="color:var(--green);border-color:var(--green)" onclick="explainQ(${q.id})">AI explain ↗</button>
+      </div>
+      ${q.marking_scheme?`<div class="ms-box hidden" id="ms-${q.id}"><div class="ms-label">Marking scheme</div>${escHtml(q.marking_scheme)}</div>`:''}
+      ${imgs && imgs.length?`<div class="hidden" id="imgs-${q.id}" style="margin-top:10px">${imgs.map(src=>`<img src="${src}" style="width:100%;border-radius:8px;border:1px solid var(--border);margin-bottom:8px" loading="lazy">`).join('')}</div>`:''}
+      <div id="ai-${q.id}"></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleImgs(id){
+  document.getElementById(id).classList.toggle('hidden');
+}
+function toggleMS(id){
+  document.getElementById(id).classList.toggle('hidden');
+}
+
+async function explainQ(id){
+  const q = allQuestions.find(x => x.id === id);
+  if(!q) return;
+  const el = document.getElementById('ai-'+id);
+  el.innerHTML = `<div class="ai-bubble"><span class="spinner"></span> AI is preparing an explanation...</div>`;
+  const resp = await callAI(`You are a Leaving Certificate Biology tutor in Ireland.
+
+Question: ${q.question}
+Marking scheme: ${q.marking_scheme || 'Not provided'}
+
+Please explain:
+1. What a full-mark answer must include
+2. Key biological terms the student must use
+3. Common mistakes to avoid
+4. A memory tip if helpful
+
+Be clear, concise, and encouraging. Write for a Leaving Cert student.`);
+  el.innerHTML = `<div class="ai-bubble"><div class="ai-label">AI tutor</div>${nl2br(escHtml(resp))}</div>`;
+}
+
+function renderNotes(){
+  const ns = allNotes;
+  const el = document.getElementById('notes-list');
+  if(!ns.length){
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📝</div><p>No notes or videos added yet.</p></div>`;
+    return;
+  }
+  const grouped = {};
+  ns.forEach(n => { if(!grouped[n.topic]) grouped[n.topic]=[]; grouped[n.topic].push(n); });
+  el.innerHTML = Object.entries(grouped).map(([topic,items]) => `
+    <div class="topic-section">
+      <div class="topic-heading">${escHtml(topic)}</div>
+      ${items.map(n => `
+        <div class="card note-card">
+          <div class="note-header">
+            <div>
+              <span class="tag ${n.type==='video'?'tag-amber':'tag-blue'}" style="margin-bottom:4px">${n.type==='video'?'Video':'Notes'}</span>
+              <div class="note-title" style="margin-top:4px">${escHtml(n.title||'')}</div>
+            </div>
+            ${n.type==='video'&&n.url?`<a href="${escHtml(n.url)}" target="_blank" class="btn btn-sm">Watch ↗</a>`:''}
+          </div>
+          ${n.content?`<div class="note-content">${escHtml(n.content)}</div>`:''}
+          ${n.content&&n.content.length>80?`
+            <button class="btn btn-sm" style="margin-top:10px;color:var(--green);border-color:var(--green)" onclick="summariseNote(${n.id})">AI summarise ↗</button>
+            <div id="sum-${n.id}"></div>`:''}
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+async function summariseNote(id){
+  const n = allNotes.find(x => x.id === id);
+  if(!n) return;
+  const el = document.getElementById('sum-'+id);
+  el.innerHTML = `<div class="ai-bubble"><span class="spinner"></span> Summarising notes...</div>`;
+  const resp = await callAI(`Summarise these Leaving Cert Biology notes in 6 clear bullet points. Focus on key facts a student needs for the exam.\n\nNotes:\n${n.content}`);
+  el.innerHTML = `<div class="ai-bubble"><div class="ai-label">AI summary</div>${nl2br(escHtml(resp))}</div>`;
+}
+
+// ══════════════════════════════════════════════════
+// QUIZ
+// ══════════════════════════════════════════════════
+async function startQuiz(){
+  const topic = document.getElementById('quiz-topic').value;
+  const level = document.getElementById('quiz-level').value;
+  const area  = document.getElementById('quiz-area');
+  area.innerHTML = `<div class="card"><div class="ai-bubble"><span class="spinner"></span> Generating ${level==='higher'?'Higher':'Ordinary'} Level question on ${topic}...</div></div>`;
+  const resp = await callAI(`You are a Leaving Certificate Biology examiner in Ireland.
+Generate ONE ${level==='higher'?'Higher':'Ordinary'} Level exam-style question on "${topic}".
+
+Format your response EXACTLY as:
+QUESTION:
+[write the question here, 2-4 sentences, worth 8-10 marks]
+
+ANSWER_POINTS:
+[5-7 bullet points of what a full mark answer must include]
+
+Keep it realistic and in the style of the Irish LC exam.`);
+
+  const qMatch = resp.match(/QUESTION:\s*([\s\S]*?)(?=ANSWER_POINTS:|$)/i);
+  const aMatch = resp.match(/ANSWER_POINTS:\s*([\s\S]*?)$/i);
+  const qText = (qMatch?.[1]||resp).trim();
+  const aText = (aMatch?.[1]||'').trim();
+
+  area.innerHTML = `
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:.75rem">${topic} — ${level==='higher'?'Higher':'Ordinary'} Level</h2>
+      <div class="quiz-q">${nl2br(escHtml(qText))}</div>
+      <div style="margin-bottom:1rem">
+        <label>Your answer</label>
+        <textarea id="quiz-answer" rows="6" placeholder="Write your answer here..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="submitAnswer(${JSON.stringify(qText)},${JSON.stringify(aText)})">Get AI feedback ↗</button>
+        <button class="btn btn-sm" onclick="startQuiz()">New question</button>
+      </div>
+      <div id="quiz-feedback"></div>
+    </div>`;
+}
+
+async function submitAnswer(question, guidance){
+  const answer = document.getElementById('quiz-answer').value.trim();
+  if(!answer){ alert('Please write an answer first.'); return; }
+  const fb = document.getElementById('quiz-feedback');
+  fb.innerHTML = `<div class="ai-bubble"><span class="spinner"></span> Reviewing your answer...</div>`;
+  const resp = await callAI(`You are a Leaving Certificate Biology teacher giving feedback.
+
+Question: ${question}
+Expected answer points: ${guidance}
+Student's answer: ${answer}
+
+Give:
+1. An estimated mark out of 10
+2. What they got right (be specific)
+3. What key points were missing
+4. One exam technique tip
+
+Be encouraging but honest. Keep it under 200 words.`);
+  fb.innerHTML = `<div class="ai-bubble"><div class="ai-label">AI feedback</div>${nl2br(escHtml(resp))}</div>`;
+}
+
+// ══════════════════════════════════════════════════
+// ADMIN DATA
+// ══════════════════════════════════════════════════
+async function loadAdminData(){
+  if(!sbClient) return;
+  const [qRes, nRes] = await Promise.all([
+    sbClient.from('questions').select('id,topic'),
+    sbClient.from('resources').select('id,topic')
+  ]);
+  const qs = qRes.data||[], ns = nRes.data||[];
+  document.getElementById('stat-q').textContent = qs.length;
+  document.getElementById('stat-n').textContent = ns.length;
+  const topics = new Set([...qs.map(q=>q.topic), ...ns.map(n=>n.topic)].filter(Boolean));
+  document.getElementById('stat-topics').textContent = topics.size;
+}
+
+async function addQuestion(){
+  if(!sbClient){ alert('Not connected to database.'); return; }
+  const q = {
+    topic: document.getElementById('new-topic').value,
+    year:  document.getElementById('new-year').value || '',
+    marks: document.getElementById('new-marks').value || '',
+    question: document.getElementById('new-q').value.trim(),
+    marking_scheme: document.getElementById('new-ms').value.trim(),
+    file_name: document.getElementById('new-file').value.trim()
+  };
+  if(!q.question){ alert('Please enter a question.'); return; }
+  const { error } = await sbClient.from('questions').insert(q);
+  if(error){ alert('Error: '+error.message); return; }
+  const s = document.getElementById('add-q-success');
+  s.style.display = 'block'; setTimeout(()=>s.style.display='none', 3000);
+  ['new-q','new-ms','new-year','new-marks','new-file'].forEach(id => document.getElementById(id).value='');
+  loadAdminData();
+}
+
+async function addNote(){
+  if(!sbClient){ alert('Not connected to database.'); return; }
+  const n = {
+    title:   document.getElementById('note-title').value.trim(),
+    topic:   document.getElementById('note-topic').value,
+    type:    document.getElementById('note-type').value,
+    url:     document.getElementById('note-url').value.trim(),
+    content: document.getElementById('note-content').value.trim()
+  };
+  if(!n.title){ alert('Please enter a title.'); return; }
+  const { error } = await sbClient.from('resources').insert(n);
+  if(error){ alert('Error: '+error.message); return; }
+  const s = document.getElementById('add-note-success');
+  s.style.display = 'block'; setTimeout(()=>s.style.display='none', 3000);
+  ['note-title','note-url','note-content'].forEach(id => document.getElementById(id).value='');
+  loadAdminData();
+}
+
+async function loadManage(){
+  if(!sbClient){ document.getElementById('manage-q-list').innerHTML='<p style="color:var(--muted)">Not connected.</p>'; return; }
+  const { data } = await sbClient.from('questions').select('*').order('created_at',{ascending:false});
+  const qs = data||[];
+  if(!qs.length){ document.getElementById('manage-q-list').innerHTML='<p style="color:var(--muted);font-size:14px">No questions yet.</p>'; return; }
+  document.getElementById('manage-q-list').innerHTML = qs.map(q=>`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="display:flex;gap:6px;margin-bottom:4px">
+          <span class="tag tag-green" style="font-size:11px">${q.topic||''}</span>
+          ${q.year?`<span class="tag tag-gray" style="font-size:11px">${q.year}</span>`:''}
+        </div>
+        <p style="font-size:13px;line-height:1.5">${escHtml((q.question||'').substring(0,120))}${(q.question||'').length>120?'…':''}</p>
+      </div>
+      <button class="btn btn-sm" style="color:var(--red);border-color:var(--red);flex-shrink:0" onclick="deleteQuestion(${q.id})">Delete</button>
+    </div>`).join('');
+}
+
+async function deleteQuestion(id){
+  if(!confirm('Delete this question?')) return;
+  await sbClient.from('questions').delete().eq('id',id);
+  loadManage(); loadAdminData();
+}
+
+function savePasswords(){
+  setCfg('student_pw', document.getElementById('set-student-pw').value);
+  setCfg('admin_pw',   document.getElementById('set-admin-pw').value);
+  const s = document.getElementById('pw-saved');
+  s.style.display='block'; setTimeout(()=>s.style.display='none',3000);
+}
+
+function updateSupabaseConfig(){
+  setCfg('sb_url', document.getElementById('settings-url').value.trim());
+  setCfg('sb_key', document.getElementById('settings-key').value.trim());
+  const s = document.getElementById('sb-saved');
+  s.style.display='block'; setTimeout(()=>s.style.display='none',3000);
+}
+
+function toggleNoteFields(){
+  const isVideo = document.getElementById('note-type').value === 'video';
+  document.getElementById('note-url-wrap').style.display     = isVideo ? 'block' : 'none';
+  document.getElementById('note-content-wrap').style.display = isVideo ? 'none'  : 'block';
+}
+
+// ══════════════════════════════════════════════════
+// AI HELPER
+// ══════════════════════════════════════════════════
+async function callAI(prompt){
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const d = await r.json();
+    return d.content?.map(c=>c.text||'').join('') || 'Sorry, no response received.';
+  } catch(e) {
+    return '⚠️ Could not connect to AI. Please try again.';
+  }
+}
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function nl2br(s){ return s.replace(/\n/g,'<br>'); }
+
+// ══════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const ready = initSupabase();
+  if(!ready){ showScreen('setup-screen'); return; }
+  showScreen('login-screen');
+});
+</script>
+</body>
+</html>
